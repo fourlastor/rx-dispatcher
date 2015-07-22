@@ -9,24 +9,41 @@ import rx.subjects.PublishSubject;
 
 public class RxDispatcher implements RequestHandler<ByteBuf, ByteBuf> {
 
-    PublishSubject<String> subject = PublishSubject.create();
+    PublishSubject<Response> subject = PublishSubject.create();
 
     @Override
     public Observable<Void> handle(
-        HttpServerRequest<ByteBuf> request,
+        final HttpServerRequest<ByteBuf> request,
         final HttpServerResponse<ByteBuf> response
     ) {
-        return subject.flatMap(new Func1<String, Observable<Void>>() {
-            @Override
-            public Observable<Void> call(String body) {
-                response.writeString(body);
-                response.setStatus(HttpResponseStatus.OK);
-                return response.close();
-            }
-        });
+        return subject
+            .filter(new Func1<Response, Boolean>() {
+                @Override
+                public Boolean call(Response r) {
+                    return r.path.equals(request.getPath());
+                }
+            })
+            .flatMap(new Func1<Response, Observable<Void>>() {
+                @Override
+                public Observable<Void> call(Response r) {
+                    response.writeString(r.body);
+                    response.setStatus(HttpResponseStatus.OK);
+                    return response.close();
+                }
+            });
     }
 
     public void match(String path, String body) {
-        subject.onNext(body);
+        subject.onNext(new Response(path, body));
+    }
+
+    static class Response {
+        final String path;
+        final String body;
+
+        Response(String path, String body) {
+            this.path = path;
+            this.body = body;
+        }
     }
 }

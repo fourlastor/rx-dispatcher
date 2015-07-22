@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -17,7 +18,6 @@ public class RxDispatcherTest {
     private static int PORT = 8080;
 
     private HttpServer<ByteBuf, ByteBuf> server;
-    private TestSubscriber<Response> subscriber;
     private RxDispatcher rxDispatcher;
     private OkHttpClient client;
 
@@ -25,8 +25,7 @@ public class RxDispatcherTest {
     public void setUp() throws Exception {
         client = new OkHttpClient();
         rxDispatcher = new RxDispatcher();
-        server = RxNetty.createHttpServer(PORT, rxDispatcher);
-        subscriber = new TestSubscriber<>();
+        server = RxNetty.createHttpServer(++PORT, rxDispatcher);
         server.start();
     }
 
@@ -36,34 +35,54 @@ public class RxDispatcherTest {
     }
 
     @Test
-    public void noRequest() throws Exception {
-        request("/hello");
+    public void noMatch() throws Exception {
+        TestSubscriber<Response> subscriber = request("/hello");
 
         subscriber.awaitTerminalEvent(500, TimeUnit.MILLISECONDS);
         subscriber.assertNotCompleted();
     }
 
     @Test
-    public void requestMatch() throws Exception {
-        request("/hello");
+    public void match() throws Exception {
+        TestSubscriber<Response> subscriber = request("/hello");
         rxDispatcher.match("/hello", "world");
 
+        matchesBody(subscriber, "world");
+    }
+
+    @Test
+    public void matchAndNoMatch() throws Exception {
+        TestSubscriber<Response> missing = request("/notMatched");
+        TestSubscriber<Response> subscriber = request("/hello");
+
+        rxDispatcher.match("/hello", "world");
+
+        matchesBody(subscriber, "world");
+
+        missing.assertNotCompleted();
+    }
+
+    private void matchesBody(TestSubscriber<Response> subscriber, String body) throws IOException {
         subscriber.awaitTerminalEvent(500, TimeUnit.MILLISECONDS);
         subscriber.assertCompleted();
 
         Response response = subscriber.getOnNextEvents().get(0);
-        assertEquals("world", response.body().string());
+        assertEquals(body, response.body().string());
     }
 
-    private void request(String path) throws InterruptedException {
+    private TestSubscriber<Response> request(String path) throws InterruptedException {
         Request request = new Request.Builder()
             .url("http://localhost:" + PORT + path)
             .build();
+
+        TestSubscriber<Response> subscriber = new TestSubscriber<>();
         RxOkHttp.request(
             client,
             request
         ).subscribe(subscriber);
 
         Thread.sleep(500);
+
+        return subscriber;
     }
 }
