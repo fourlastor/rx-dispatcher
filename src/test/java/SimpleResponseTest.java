@@ -1,4 +1,5 @@
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
@@ -25,25 +26,51 @@ public class SimpleResponseTest {
 
     @Before
     public void setUp() throws Exception {
+        when(request.getHttpMethod()).thenReturn(HttpMethod.GET);
         simpleResponse = new SimpleResponse("/hello", "world");
     }
 
     @Test
     public void pathMatches() throws Exception {
+        when(request.getHttpMethod()).thenReturn(HttpMethod.GET);
         when(request.getPath()).thenReturn("/hello");
 
-        boolean matches = simpleResponse.match(request);
+        boolean match = simpleResponse.match(request);
 
-        assertTrue(matches);
+        assertTrue(match);
     }
 
     @Test
     public void pathDoesNotMatch() throws Exception {
         when(request.getPath()).thenReturn("/world");
 
-        boolean matches = simpleResponse.match(request);
+        boolean match = simpleResponse.match(request);
 
-        assertFalse(matches);
+        assertFalse(match);
+    }
+
+    @Test
+    public void methodMatches() throws Exception {
+        when(request.getHttpMethod()).thenReturn(HttpMethod.PUT);
+        when(request.getPath()).thenReturn("/hello");
+
+        SimpleResponse response = new SimpleResponse("/hello", "world", HttpMethod.PUT);
+
+        boolean match = response.match(request);
+
+        assertTrue(match);
+    }
+
+    @Test
+    public void methodDoesNotMatch() throws Exception {
+        when(request.getHttpMethod()).thenReturn(HttpMethod.PUT);
+        when(request.getPath()).thenReturn("/hello");
+
+        SimpleResponse response = new SimpleResponse("/hello", "world", HttpMethod.GET);
+
+        boolean match = response.match(request);
+
+        assertFalse(match);
     }
 
     @Test
