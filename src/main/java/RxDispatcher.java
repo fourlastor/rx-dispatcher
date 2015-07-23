@@ -1,5 +1,4 @@
 import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
@@ -20,30 +19,24 @@ public class RxDispatcher implements RequestHandler<ByteBuf, ByteBuf> {
             .filter(new Func1<Response, Boolean>() {
                 @Override
                 public Boolean call(Response r) {
-                    return r.path.equals(request.getPath());
+                    return r.match(request);
                 }
             })
             .flatMap(new Func1<Response, Observable<Void>>() {
                 @Override
                 public Observable<Void> call(Response r) {
-                    response.writeString(r.body);
-                    response.setStatus(HttpResponseStatus.OK);
+                    r.process(response);
                     return response.close();
                 }
             });
     }
 
     public void match(String path, String body) {
-        subject.onNext(new Response(path, body));
+        subject.onNext(new SimpleResponse(path, body));
     }
 
-    static class Response {
-        final String path;
-        final String body;
-
-        Response(String path, String body) {
-            this.path = path;
-            this.body = body;
-        }
+    public interface Response {
+        boolean match(HttpServerRequest<ByteBuf> request);
+        void process(HttpServerResponse<ByteBuf> response);
     }
 }
