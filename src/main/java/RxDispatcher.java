@@ -32,7 +32,11 @@ public class RxDispatcher implements RequestHandler<ByteBuf, ByteBuf> {
     }
 
     public void match(String path, String body) {
-        subject.onNext(new SimpleResponse(path, body));
+        match(new SimpleResponse(path, body));
+    }
+
+    public void match(Response response) {
+        subject.onNext(response);
     }
 
     public interface Response {

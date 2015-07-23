@@ -2,8 +2,11 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.protocol.http.server.HttpServer;
+import io.reactivex.netty.protocol.http.server.HttpServerRequest;
+import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,6 +63,26 @@ public class RxDispatcherTest {
         matchesBody(subscriber, "world");
 
         missing.assertNotCompleted();
+    }
+
+    @Test
+    public void matchCustomResponse() throws Exception {
+        TestSubscriber<Response> subscriber = request("/hello");
+
+        rxDispatcher.match(new RxDispatcher.Response() {
+            @Override
+            public boolean match(HttpServerRequest<ByteBuf> request) {
+                return true;
+            }
+
+            @Override
+            public void process(HttpServerResponse<ByteBuf> response) {
+                response.setStatus(HttpResponseStatus.OK);
+                response.writeString("world");
+            }
+        });
+
+        matchesBody(subscriber, "world");
     }
 
     private void matchesBody(TestSubscriber<Response> subscriber, String body) throws IOException {
