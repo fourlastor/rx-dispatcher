@@ -19,10 +19,7 @@ Add the correct repository to your gradle file
 
 ```
 repositories {
-    mavenCentral()
-    maven {
-        url  'https://dl.bintray.com/fourlastor/maven'
-    }
+    jcenter()
 }
 
 dependencies {
