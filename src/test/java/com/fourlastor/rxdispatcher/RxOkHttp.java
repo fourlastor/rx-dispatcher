@@ -1,3 +1,5 @@
+package com.fourlastor.rxdispatcher;
+
 import com.squareup.okhttp.*;
 import rx.Observable;
 import rx.Subscriber;

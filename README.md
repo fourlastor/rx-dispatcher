@@ -13,6 +13,23 @@ rxDispatcher.match("/hello", "world");
 // the server will respond to the request previously made with "hello"
 ```
 
+## Installation
+
+Add the correct repository to your gradle file
+
+```
+repositories {
+    mavenCentral()
+    maven {
+        url  'https://dl.bintray.com/fourlastor/maven'
+    }
+}
+
+dependencies {
+    androidTestCompile 'com.fourlastor:rx-dispatcher:0.0.1'
+}
+```
+
 ## Motivation
 
 Writing Android instrumentation tests was quite difficoult with [MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) because the activity would start (and do the requests) **before** the test even started. That's especially true if you use the new `@Rule` system.

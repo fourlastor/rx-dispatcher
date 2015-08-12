@@ -1,3 +1,5 @@
+package com.fourlastor.rxdispatcher;
+
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
